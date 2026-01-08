@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cosmic Tarot Reading</title>
+  <link rel="icon" href="data:,">
 
   <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://tarot-two-iota.vercel.app/tarot-icon.png","button":{"title":"Draw Your Cards","action":{"type":"launch_miniapp","name":"Cosmic Tarot Reading","url":"https://tarot-two-iota.vercel.app","splashImageUrl":"https://tarot-two-iota.vercel.app/tarot-icon.png","splashBackgroundColor":"#1a0b2e"}}}' />
   <meta name="fc:frame" content='{"version":"1","imageUrl":"https://tarot-two-iota.vercel.app/tarot-icon.png","button":{"title":"Draw Your Cards","action":{"type":"launch_frame","name":"Cosmic Tarot Reading","url":"https://tarot-two-iota.vercel.app","splashImageUrl":"https://tarot-two-iota.vercel.app/tarot-icon.png","splashBackgroundColor":"#1a0b2e"}}}' />
@@ -21,20 +22,21 @@
       font-family: system-ui, sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
+      padding-bottom: 100px;
     }
 
     .app {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 16px 100px;
+      padding: 32px 16px 20px;
       text-align: center;
     }
 
     h1 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -42,30 +44,31 @@
     }
 
     .subtitle {
-      font-size: 1rem;
+      font-size: 0.95rem;
       opacity: 0.8;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
     .cards-container {
       display: flex;
-      gap: 12px;
-      margin: 24px 0;
-      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0 20px;
+      flex-wrap: nowrap;
       justify-content: center;
       max-width: 100%;
     }
 
     .card-slot {
-      width: 100px;
-      height: 160px;
+      width: 90px;
+      height: 150px;
       background: rgba(255,255,255,0.05);
       border: 2px dashed rgba(255,255,255,0.2);
       border-radius: 8px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       opacity: 0.6;
       text-align: center;
       padding: 8px;
@@ -75,12 +78,13 @@
       border: none;
       background: none;
       opacity: 1;
+      padding: 0;
     }
 
     .card-slot img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 6px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
@@ -89,11 +93,14 @@
       display: none;
       background: rgba(255,255,255,0.05);
       border-radius: 16px;
-      padding: 24px;
-      margin-top: 24px;
+      padding: 20px;
+      margin-top: 16px;
       max-width: 500px;
+      width: 100%;
       text-align: left;
       border: 1px solid rgba(255,255,255,0.1);
+      max-height: 400px;
+      overflow-y: auto;
     }
 
     .reading-section.show {
@@ -101,7 +108,7 @@
     }
 
     .reading-label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       opacity: 0.7;
@@ -109,8 +116,8 @@
     }
 
     .reading-text {
-      font-size: 1rem;
-      line-height: 1.7;
+      font-size: 0.95rem;
+      line-height: 1.6;
       opacity: 0.95;
       white-space: pre-line;
     }
@@ -121,7 +128,7 @@
       left: 0;
       right: 0;
       padding: 16px;
-      background: linear-gradient(to top, #1a0b2e 60%, transparent);
+      background: linear-gradient(to top, #1a0b2e 70%, transparent);
     }
 
     button {
@@ -133,8 +140,8 @@
       color: #fff;
       border: none;
       border-radius: 999px;
-      padding: 16px;
-      font-size: 1.1rem;
+      padding: 14px;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       transition: transform 0.1s, opacity 0.3s;
@@ -148,7 +155,7 @@
     }
 
     .loading {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       opacity: 0.7;
       margin-top: 8px;
       text-align: center;
@@ -156,9 +163,24 @@
 
     #error {
       color: #ff7777;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-align: center;
       margin-top: 8px;
+    }
+
+    /* Scrollbar styling */
+    .reading-section::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .reading-section::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+
+    .reading-section::-webkit-scrollbar-thumb {
+      background: rgba(167,139,250,0.5);
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -220,19 +242,35 @@
       }
 
       try {
-        const res = await fetch("/api/tarot");
+        const res = await fetch("https://tarot-two-iota.vercel.app/api/tarot");
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("API error:", errorText);
+          throw new Error(`Server error: ${res.status}`);
+        }
+
         const data = await res.json();
 
         if (data.error) {
           throw new Error(data.error);
         }
 
+        console.log("Cards received:", data.cards);
+
         // Display cards
         data.cards.forEach((card, index) => {
           const slot = document.getElementById(`card${index + 1}`);
           const img = document.createElement("img");
+          
+          // Handle missing or broken images
           img.src = card.image;
           img.alt = card.name;
+          img.onerror = function() {
+            console.error("Failed to load image:", card.image);
+            slot.innerHTML = `<div style="font-size:0.7rem;padding:4px;">${card.name}</div>`;
+          };
+          
           slot.innerHTML = "";
           slot.appendChild(img);
           slot.classList.add("loaded");
@@ -241,10 +279,15 @@
         // Display reading
         readingText.textContent = data.reading;
         readingSection.classList.add("show");
+        
+        // Scroll reading into view on mobile
+        setTimeout(() => {
+          readingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
 
       } catch (err) {
-        console.error(err);
-        errorEl.textContent = "Unable to draw cards. Please try again.";
+        console.error("Error:", err);
+        errorEl.textContent = err.message || "Unable to draw cards. Please try again.";
       } finally {
         btn.disabled = false;
         loading.style.display = "none";
