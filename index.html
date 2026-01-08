@@ -72,13 +72,25 @@
       opacity: 0.6;
       text-align: center;
       padding: 8px;
+      cursor: default;
     }
 
     .card-slot.loaded {
-      border: none;
+      border: 2px solid rgba(167,139,250,0.3);
       background: none;
       opacity: 1;
       padding: 0;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-slot.loaded:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(167,139,250,0.4);
+    }
+
+    .card-slot.loaded:active {
+      transform: translateY(-2px);
     }
 
     .card-slot img {
@@ -86,40 +98,17 @@
       height: 100%;
       object-fit: contain;
       border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    .reading-section {
-      display: none;
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 20px;
-      margin-top: 16px;
-      max-width: 500px;
-      width: 100%;
-      text-align: left;
-      border: 1px solid rgba(255,255,255,0.1);
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    .reading-section.show {
-      display: block;
-    }
-
-    .reading-label {
+    .hint {
       font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      opacity: 0.7;
-      margin-bottom: 12px;
+      opacity: 0.6;
+      margin-top: 8px;
+      display: none;
     }
 
-    .reading-text {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      opacity: 0.95;
-      white-space: pre-line;
+    .hint.show {
+      display: block;
     }
 
     .bottom-bar {
@@ -168,17 +157,75 @@
       margin-top: 8px;
     }
 
-    /* Scrollbar styling */
-    .reading-section::-webkit-scrollbar {
+    /* Modal styling */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1a0b2e 0%, #16213e 100%);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      border: 2px solid rgba(167,139,250,0.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.7;
+      margin-bottom: 8px;
+      color: #a78bfa;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #f5f5ff;
+    }
+
+    .modal-text {
+      font-size: 1rem;
+      line-height: 1.7;
+      opacity: 0.95;
+      margin-bottom: 20px;
+    }
+
+    .modal-close {
+      width: 100%;
+      background: rgba(167,139,250,0.2);
+      color: #a78bfa;
+      padding: 12px;
+      font-size: 0.95rem;
+    }
+
+    .modal-content::-webkit-scrollbar {
       width: 6px;
     }
 
-    .reading-section::-webkit-scrollbar-track {
+    .modal-content::-webkit-scrollbar-track {
       background: rgba(255,255,255,0.05);
       border-radius: 10px;
     }
 
-    .reading-section::-webkit-scrollbar-thumb {
+    .modal-content::-webkit-scrollbar-thumb {
       background: rgba(167,139,250,0.5);
       border-radius: 10px;
     }
@@ -202,10 +249,7 @@
       </div>
     </div>
 
-    <div id="reading" class="reading-section">
-      <div class="reading-label">Your Reading</div>
-      <div id="reading-text" class="reading-text"></div>
-    </div>
+    <div class="hint" id="hint">Tap a card to see its meaning</div>
 
     <div id="loading" class="loading" style="display:none;">
       Drawing your cards...
@@ -217,28 +261,41 @@
     <div id="error"></div>
   </div>
 
+  <!-- Modal for card meanings -->
+  <div id="modal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header" id="modal-position">PAST</div>
+      <div class="modal-title" id="modal-card-name">The Fool</div>
+      <div class="modal-text" id="modal-meaning">Loading...</div>
+      <button class="modal-close" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
   <script type="module">
     import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
     sdk.actions.ready();
+
+    let currentReading = null;
 
     window.drawCards = async function() {
       const btn = document.getElementById("draw-btn");
       const loading = document.getElementById("loading");
       const errorEl = document.getElementById("error");
-      const readingSection = document.getElementById("reading");
-      const readingText = document.getElementById("reading-text");
+      const hint = document.getElementById("hint");
 
       // Reset UI
       btn.disabled = true;
       loading.style.display = "block";
       errorEl.textContent = "";
-      readingSection.classList.remove("show");
+      hint.classList.remove("show");
+      currentReading = null;
 
       // Clear previous cards
       for (let i = 1; i <= 3; i++) {
         const slot = document.getElementById(`card${i}`);
         slot.innerHTML = i === 1 ? "<div>Past</div>" : i === 2 ? "<div>Present</div>" : "<div>Future</div>";
         slot.classList.remove("loaded");
+        slot.onclick = null;
       }
 
       try {
@@ -257,13 +314,13 @@
         }
 
         console.log("Cards received:", data.cards);
+        currentReading = data;
 
         // Display cards
         data.cards.forEach((card, index) => {
           const slot = document.getElementById(`card${index + 1}`);
           const img = document.createElement("img");
           
-          // Handle missing or broken images
           img.src = card.image;
           img.alt = card.name;
           img.onerror = function() {
@@ -274,16 +331,13 @@
           slot.innerHTML = "";
           slot.appendChild(img);
           slot.classList.add("loaded");
+          
+          // Add click handler
+          slot.onclick = () => showCardMeaning(index);
         });
 
-        // Display reading
-        readingText.textContent = data.reading;
-        readingSection.classList.add("show");
-        
-        // Scroll reading into view on mobile
-        setTimeout(() => {
-          readingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
+        // Show hint
+        hint.classList.add("show");
 
       } catch (err) {
         console.error("Error:", err);
@@ -291,6 +345,43 @@
       } finally {
         btn.disabled = false;
         loading.style.display = "none";
+      }
+    }
+
+    window.showCardMeaning = function(cardIndex) {
+      if (!currentReading) return;
+
+      const card = currentReading.cards[cardIndex];
+      const modal = document.getElementById("modal");
+      const positionEl = document.getElementById("modal-position");
+      const nameEl = document.getElementById("modal-card-name");
+      const meaningEl = document.getElementById("modal-meaning");
+
+      // Extract the specific section from the full reading
+      const fullReading = currentReading.reading;
+      const position = card.position.toUpperCase();
+      
+      // Try to extract the specific card's meaning from the reading
+      const regex = new RegExp(`${position}:([^]*?)(?=PRESENT:|FUTURE:|$)`, 'i');
+      const match = fullReading.match(regex);
+      let cardMeaning = match ? match[1].trim() : fullReading;
+
+      // If we can't extract it, just show the full reading
+      if (!cardMeaning || cardMeaning.length < 20) {
+        cardMeaning = fullReading;
+      }
+
+      positionEl.textContent = position;
+      nameEl.textContent = card.name + (card.reversed ? ' (Reversed)' : '');
+      meaningEl.textContent = cardMeaning;
+
+      modal.classList.add("show");
+    }
+
+    window.closeModal = function(event) {
+      // Only close if clicking the backdrop or close button
+      if (!event || event.target.id === "modal" || event.target.classList.contains("modal-close")) {
+        document.getElementById("modal").classList.remove("show");
       }
     }
   </script>
