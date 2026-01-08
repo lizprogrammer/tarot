@@ -14,18 +14,33 @@ module.exports = async function handler(req, res) {
   try {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
+      console.error("Missing GROQ_API_KEY");
       return res.status(500).json({ error: "Missing GROQ API key" });
     }
 
+    console.log("Fetching tarot cards...");
+    
     // Fetch 3 random cards from the Tarot API
     const tarotApiUrl = "https://tarot-api-3hv5.onrender.com/api/v1/cards/random?n=3";
     const tarotResponse = await fetch(tarotApiUrl);
     
+    console.log("Tarot API status:", tarotResponse.status);
+    
     if (!tarotResponse.ok) {
+      const errorText = await tarotResponse.text();
+      console.error("Tarot API error:", errorText);
       return res.status(500).json({ error: "Failed to fetch tarot cards" });
     }
 
     const data = await tarotResponse.json();
+    console.log("Tarot API response:", JSON.stringify(data).substring(0, 200));
+    
+    // Check if cards exist in response
+    if (!data.cards || !Array.isArray(data.cards) || data.cards.length < 3) {
+      console.error("Invalid tarot response format:", data);
+      return res.status(500).json({ error: "Invalid tarot card data" });
+    }
+    
     const cards = data.cards;
     
     // Extract card info
@@ -76,6 +91,8 @@ It's ${timeOfDay} on ${today}.
 Give me a three-card reading that feels insightful and relevant to this moment.
 `.trim();
 
+    console.log("Calling Groq API...");
+
     // Call Groq API
     const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -94,12 +111,18 @@ Give me a three-card reading that feels insightful and relevant to this moment.
       }),
     });
 
+    console.log("Groq API status:", groqResponse.status);
+
     if (!groqResponse.ok) {
       let errorMessage = "Groq API error";
       try {
         const errorData = await groqResponse.json();
+        console.error("Groq error data:", errorData);
         errorMessage = errorData.error?.message || errorMessage;
-      } catch {}
+      } catch (e) {
+        const errorText = await groqResponse.text();
+        console.error("Groq error text:", errorText);
+      }
       return res.status(500).json({ error: errorMessage });
     }
 
@@ -107,8 +130,11 @@ Give me a three-card reading that feels insightful and relevant to this moment.
     const reading = aiData.choices?.[0]?.message?.content?.trim();
 
     if (!reading) {
+      console.error("No reading in Groq response:", aiData);
       return res.status(500).json({ error: "No reading generated" });
     }
+
+    console.log("Success! Returning reading.");
 
     // Return cards and reading
     res.status(200).json({
@@ -137,47 +163,6 @@ Give me a three-card reading that feels insightful and relevant to this moment.
 
   } catch (err) {
     console.error("API Error:", err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || "Unknown error" });
   }
 };
-```
-
----
-
-## How to Get Everything Set Up
-
-### 1. **Get Groq API Key** (FREE)
-
-1. Go to https://console.groq.com/
-2. Sign up with Google/GitHub/Email
-3. Click **"API Keys"** in left sidebar
-4. Click **"Create API Key"**
-5. Copy the key (starts with `gsk_...`)
-
-### 2. **Add to Vercel**
-
-1. Go to your Vercel project
-2. **Settings** → **Environment Variables**
-3. Add:
-   - **Name:** `GROQ_API_KEY`
-   - **Value:** `gsk_...` (your key)
-   - Check all environments
-4. Click **Save**
-5. **Redeploy** your project
-
-### 3. **Tarot Cards API** (Already Free!)
-
-The tarot cards come from: https://tarot-api-3hv5.onrender.com/
-
-**No API key needed!** It's completely free and public.
-
-**What it provides:**
-- 78 tarot cards (full deck)
-- Card images (Rider-Waite style)
-- Card meanings
-- Reversed/upright options
-- Random card selection
-
-**API endpoint we're using:**
-```
-https://tarot-api-3hv5.onrender.com/api/v1/cards/random?n=3
