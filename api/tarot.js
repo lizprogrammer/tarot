@@ -68,37 +68,32 @@ module.exports = async function handler(req, res) {
     const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
 
     const systemPrompt = `
-You are an insightful tarot reader who blends traditional card meanings with modern, grounded wisdom.
+You are a practical tarot reader who gives clear, actionable insights.
 
-Given 3 cards (Past, Present, Future), provide a cohesive reading that:
-- Explains each card's meaning in context of its position
-- Weaves them into a narrative arc
-- Feels personal and relevant to the moment
-- Is encouraging but honest
-- Avoids generic fortune-telling clichés
-- Uses clear, accessible language
+Your readings are:
+- Short and direct (2-3 sentences per card)
+- Focused on what the person can DO or UNDERSTAND
+- Written in simple, conversational language
+- Honest but encouraging
+- Free of mystical jargon
 
-Structure your response as:
-1. Brief intro sentence
-2. PAST: [Card name] - What this reveals about your journey
-3. PRESENT: [Card name] - Where you are now
-4. FUTURE: [Card name] - What's emerging
+Structure:
+PAST: [Card] - What happened or what you learned
+PRESENT: [Card] - What's happening now and what to notice
+FUTURE: [Card] - What's likely coming and how to navigate it
 
-Keep the total reading to 150-200 words.
-
-Tone: Warm, wise, slightly mystical but grounded, like a trusted friend with cosmic insight.
+Keep each section brief. Total reading: 100-150 words maximum.
 `.trim();
 
     const userPrompt = `
-I drew these three cards for a Past/Present/Future spread:
-
+Cards drawn:
 PAST: ${pastCard.name}${pastCard.reversed ? ' (Reversed)' : ''}
 PRESENT: ${presentCard.name}${presentCard.reversed ? ' (Reversed)' : ''}
 FUTURE: ${futureCard.name}${futureCard.reversed ? ' (Reversed)' : ''}
 
-It's ${timeOfDay} on ${today}.
+Time: ${timeOfDay}, ${today}
 
-Give me a three-card reading that feels insightful and relevant to this moment.
+Give a brief, practical reading. What should I know about these three cards?
 `.trim();
 
     console.log("Calling Groq API...");
@@ -116,8 +111,8 @@ Give me a three-card reading that feels insightful and relevant to this moment.
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.8,
-        max_tokens: 400,
+        temperature: 0.7,
+        max_tokens: 250,
       }),
     });
 
