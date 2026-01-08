@@ -1,0 +1,28 @@
+{
+  "frame": {
+    "name": "tarot",
+    "version": "1",
+    "iconUrl": "https://tarot-two-iota.vercel.app/icon.png",
+    "homeUrl": "https://tarot-two-iota.vercel.app",
+    "imageUrl": "https://tarot-two-iota.vercel.app/tarot-icon.png",
+    "buttonTitle": "Get your tarot reading",
+    "splashImageUrl": "https://tarot-two-iota.vercel.app/tarot-icon.png",
+    "splashBackgroundColor": "#1a0b2e",
+    "webhookUrl": "https://tarot-two-iota.vercel.app/api/tarot",
+    "subtitle": "Tarot",
+    "description": "Tarot",
+    "screenshotUrls": [
+      "https://tarot-two-iota.vercel.app/tarot-icon.png"
+    ],
+    "primaryCategory": "games",
+    "heroImageUrl": "https://tarot-two-iota.vercel.app/tarot-icon.png",
+    "ogTitle": "Get your tarot reading",
+    "ogDescription": "Get your tarot reading",
+    "ogImageUrl": "https://tarot-two-iota.vercel.app/tarot-icon.png"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjIxMDI1OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDdEY2M5NkZGQmFGRjg1NUJjNzRiZkM4RDY2RDk5ODE0RDFCMkQ1ZDQifQ",
+    "payload": "eyJkb21haW4iOiJ0YXJvdC10d28taW90YS52ZXJjZWwuYXBwIn0",
+    "signature": "lDHnBl0rg4XVhJveIV4Rcr9mL3U4dshhHrqCdMWafZF7Pj/5BxoniYx2LEQenCddn2x6P/T6unqDHIJOSJ8ulxs="
+  }
+}
