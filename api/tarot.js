@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     }
 
     const data = await tarotResponse.json();
-    console.log("Tarot API response:", JSON.stringify(data).substring(0, 200));
+    console.log("Tarot API response received");
     
     // Check if cards exist in response
     if (!data.cards || !Array.isArray(data.cards) || data.cards.length < 3) {
@@ -43,10 +43,20 @@ module.exports = async function handler(req, res) {
     
     const cards = data.cards;
     
-    // Extract card info
+    // Extract card info and use more reliable image URLs
     const pastCard = cards[0];
     const presentCard = cards[1];
     const futureCard = cards[2];
+
+    // Function to get working image URL
+    const getImageUrl = (card) => {
+      // Try to use the API's image first, but fallback to a CDN version
+      if (card.image && card.image.includes('sacred-texts.com')) {
+        return card.image;
+      }
+      // Fallback: construct image URL from card name_short if available
+      return card.image || `https://www.sacred-texts.com/tarot/pkt/img/${card.name_short || 'ar00'}.jpg`;
+    };
 
     // Build context
     const today = new Date().toLocaleDateString("en-US", { 
@@ -136,24 +146,24 @@ Give me a three-card reading that feels insightful and relevant to this moment.
 
     console.log("Success! Returning reading.");
 
-    // Return cards and reading
+    // Return cards and reading with working image URLs
     res.status(200).json({
       cards: [
         {
           name: pastCard.name,
-          image: pastCard.image,
+          image: getImageUrl(pastCard),
           reversed: pastCard.reversed || false,
           position: "Past"
         },
         {
           name: presentCard.name,
-          image: presentCard.image,
+          image: getImageUrl(presentCard),
           reversed: presentCard.reversed || false,
           position: "Present"
         },
         {
           name: futureCard.name,
-          image: futureCard.image,
+          image: getImageUrl(futureCard),
           reversed: futureCard.reversed || false,
           position: "Future"
         }
